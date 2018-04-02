@@ -18,7 +18,7 @@ app.use(express.static("public"));
 app.use(passport.initialize());
 
 // Connection URL
-var url = 'mongodb://codercampy:password@ds117136.mlab.com:17136/codercampy';
+var url = 'mongodb+srv://codercampy:SyndicatesEra0601@codercampy-1eblt.azure.mongodb.net/test';
 
 // Use connect method to connect to the server
 MongoClient.connect(url, function(err, client) {
