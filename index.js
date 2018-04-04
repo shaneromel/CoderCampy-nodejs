@@ -2,6 +2,7 @@ var MongoClient = require('mongodb').MongoClient
   , assert = require('assert');
 
 var mongo=require('mongodb');
+var admin = require("firebase-admin");
 
 var passport=require('passport'),LocalStrategy=require('passport-local').Strategy;
 
@@ -16,6 +17,24 @@ app.use(bodyParser.json())
 app.use(cors());
 app.use(express.static("public"));
 app.use(passport.initialize());
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: 'codercampy-438d0',
+    clientEmail: 'firebase-adminsdk-m2bfv@codercampy-438d0.iam.gserviceaccount.com',
+    privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDmlyrx0aewCMJ2\nDoHGc479DPyj3aI6yFQQJD8VLKFrHQXPUW7BDc/0GHNeKvae3/bFRC9cPdj2A0FA\n35cO/Ms/VkcUnCHQKXs5lZSc7bdqiDsFsMiCO6GgQSo8Y8XsNkNwaB0STxUNgVdj\n4UzqXdZP5VozfR8AcENPIm8dHhsTrJPOFTQNDMKMljeKlPbifpi1EavfkGM0JwMT\nHDD7V9cOCkHTbZwW11nKSDMGHQU1Utzjyj7Q/6YDKhn2XTHpQTydPBsqEPU2xB2L\nsRgq5LDU1yz1VwTNG1ReKX18WmQkVIhwsAiehTZ3qsAvfOe+TNBNUTBpzht/CqME\n/dp03lmlAgMBAAECggEAHSbGx9gCvFM7LFwkpW9WCCFEbj32hLpvQDQo4ncoOAet\nBJrtpsvlep09to21bHvxcVpvp1htTZq3POmXag5k7o6sgUtEzhF0ceD6bwVxfu8W\nkR9alfZOdllOquBNNRHeID+VT0t+pJyxrN+ejvGKhsK+zswWZ4KJy98VT4fPEgMt\npLvT8OK/tRk6ZC62MFbpHEEv/9OQSh28n2dWtlO3cFvtiJaooODHuzZSZOqy+05n\nWsUfT4Z/s3w53mkp286RNrRlcP8F85ZGYDaCFvZr5zAXp62xQmiPI2EeTk+sJgR/\nvm8cTLRLpUbpIL8cA4vO1T+G3o2t3+bWJXTUyGDmCQKBgQDzduKlFSxfH3PNj4Vx\ndRR2l2G+o4h2rljQ5cmg8W9giZpUtmkrhS8ZZ79Ar4UOUa3eOpKkyy5hSEIA4KNc\nmeuZ2qVDRVFqJbc20XsYeeym21Nqvpmvl82+gcsNuQdazSTmgFRYZJ/aGADSjTkY\nc7KBDqFw38lddZdYjQhdKDac+QKBgQDydpdN/YRupag4JQB6S3JSpu2dcHKshOCw\nYHHlzKt8FZvzrcEg+0ksklU8LYLu/KEathZIeEk5XCrCAGW6PnFzigTQQ9a57Zxc\n97+aSLXELAyI5ZkBkD4IzeiF42mznXmgOeKXPi4dkB5HV5eDStMWwNuK+op09cD/\no6xItjipDQKBgHVYw/0Vq4Fdw488sfDxoZ9Xb8FXSRsLBbwKRZjRRgGd0Ukrcp2L\nYBw6qTAgaV1xeQA38x6C4CP7k/SgUZz8g1Zw0F8QNiGXdCtz5ITzn2D9LcOxgpnj\n7UL5hElk+WqGnlaLXBwOxA12rE7PyslCWrNhveaNtpzZZM1FjNZ533jhAoGBAK6O\nblO5prQ6EyeIjBV/Z6jVgNAN+qD1cQXKCXXVqcfFjucaOqZSAtZR64dNhKwluJ6Q\nZO57msvu7OGKg7JX7jmuLdT6YgataBsOSiT7H9FBnSyZj1Qu0lpoU3TAyoKDZuLR\nia41F+I0tXfLOctN/TauVeByi2e03eOtpAUdGyGpAoGBALtW/G7UfdLYE+YuskD0\nA9XtuB/cprweruM5J63P4ru4gJhafK7W+QAKYdH36V7a8v4ZDfcTozBI+kMOwSsh\nJ8O2y3TZI34NhFRxGhV3o4h0mhaT8RtV2pe2poXsiAsTEfMsgqRTgB5dcRqWXduw\n471qi8IRv6DPUcEfsDCAJGiA\n-----END PRIVATE KEY-----\n'
+	}),
+  databaseURL: 'https://codercampy-438d0.firebaseio.com'
+});
+
+/*admin.auth().getUser("sTX9rwkEfOYQhjzBs0TWZnrFe3D2")
+  .then(function(userRecord) {
+    // See the UserRecord reference doc for the contents of userRecord.
+    console.log("Successfully fetched user data:", userRecord.toJSON());
+  })
+  .catch(function(error) {
+    console.log("Error fetching user data:", error);
+  });*/
 
 // Connection URL
 var url = 'mongodb+srv://codercampy:SyndicatesEra0601@codercampy-1eblt.azure.mongodb.net/test';
@@ -33,6 +52,48 @@ MongoClient.connect(url, function(err, client) {
 
     if(request.body) {
       addCourseRating(db,function(isAdded){
+        if (isAdded) {
+          response.send({code:"success"});
+        } else {
+          response.send({code:"failed"});
+        }
+      },request.body);
+    }
+
+  });
+
+  app.post('/user-update/name', function(request, response){
+
+    if(request.body) {
+      updateUserName(db,function(isAdded){
+        if (isAdded) {
+          response.send({code:"success"});
+        } else {
+          response.send({code:"failed"});
+        }
+      },request.body);
+    }
+
+  });
+
+  app.post('/user-update/email', function(request, response){
+
+    if(request.body) {
+      updateUserEmail(db,function(isAdded){
+        if (isAdded) {
+          response.send({code:"success"});
+        } else {
+          response.send({code:"failed"});
+        }
+      },request.body);
+    }
+
+  });
+
+  app.post('/user-update/phone', function(request, response){
+
+    if(request.body) {
+      updateUserPhone(db,function(isAdded){
         if (isAdded) {
           response.send({code:"success"});
         } else {
@@ -154,6 +215,21 @@ MongoClient.connect(url, function(err, client) {
   })
 
   app.get('/categories',function(req,res){
+
+  	/*admin.database().ref("fcmTokens").child("NRtOhJpJfKStNqaHSlaW1ULbwOn2").once('value')
+  .then(function(token) {
+
+  	console.log(token.val());
+      
+  	if (token.val() == req.params.token) {
+
+  		res.send("true");
+
+  	} else {
+  		res.send("false");
+  	}
+  });*/
+
     findcategories(db,function(docs){
       res.send(docs);
     })
@@ -594,7 +670,71 @@ var addUser=function(db,callback,user){
 
 }
 
+var updateUserName = function(db,callback,data){
+
+  var collection=db.collection("users");
+
+  var cond = {
+    uid: data.uid
+  };
+
+  var d = {
+    name: data.name
+  }
+
+ //data -> name, uid
+
+  collection.findOneAndUpdate( cond,{$set : d}, {upsert:true},function(err,res){
+    if(err) throw err;
+    callback(true);
+  })
+
+}
+
+var updateUserEmail = function(db,callback,data){
+
+  var collection=db.collection("users");
+
+  var cond = {
+    uid: data.uid
+  };
+
+  var d = {
+    email: data.email
+  }
+
+ //data -> email, uid
+
+  collection.findOneAndUpdate( cond,{$set : d}, {upsert:true},function(err,res){
+    if(err) throw err;
+    callback(true);
+  })
+
+}
+
+var updateUserPhone = function(db,callback,data){
+
+  var collection=db.collection("users");
+
+  var cond = {
+    uid: data.uid
+  };
+
+  var d = {
+    phone: data.phone
+  }
+
+ //data -> phone, uid
+
+  collection.findOneAndUpdate( cond,{$set : d}, {upsert:true},function(err,res){
+    if(err) throw err;
+    callback(true);
+  })
+
+}
+
 var addCourseRating=function(db,callback,data){
+
   var collection=db.collection("course_ratings");
 
   var cond = {
