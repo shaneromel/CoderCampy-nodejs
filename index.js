@@ -4,8 +4,6 @@ var MongoClient = require('mongodb').MongoClient
 var mongo=require('mongodb');
 var admin = require("firebase-admin");
 
-var passport=require('passport'),LocalStrategy=require('passport-local').Strategy;
-
 var express=require('express');
 var app=express();
 var cors=require('cors');
@@ -14,9 +12,12 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 
-app.use(cors());
-app.use(express.static("public"));
-app.use(passport.initialize());
+var corsOptions = {
+  origin: 'https://codercampy.com',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+
+var Join = require('mongo-join').Join;
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -118,33 +119,17 @@ MongoClient.connect(url, function(err, client) {
 
   });
 
-  app.post('/add-fav', function(request, response){
+   app.post('/toggle-favorite', function(req, res){
+    toggleFavorite(db, req.body, function(response){
+      res.send(response);
+    });
+  })
 
-    if(request.body) {
-      addFav(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
-      },request.body);
-    }
-
-  });
-
-  app.post('/remove-fav', function(request, response){
-
-    if(request.body) {
-      removeFav(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
-      },request.body);
-    }
-
-  });
+   app.post('/is-favorite', function(req, res){
+    isFavorite(db, req.body, function(response){
+      res.send(response);
+    })
+  })
 
 
   app.post('/course-discussion', function(request, response){
@@ -458,15 +443,36 @@ MongoClient.connect(url, function(err, client) {
 
 });
 
-var findAll= function(db,callback){
-  
+var isFavorite= function(db, data, callback){
+  var collection=db.collection("users");
+
+  var uid=data.uid;
+  var courseId=data.courseId;
+
+  collection.findOne({uid:uid}, function(err, doc){
+    assert.equal(err,null);
+
+    var exists=false;
+    if(doc){
+      if(doc.favourites){
+        doc.favourites.forEach(favorite=>{
+          if(favorite==courseId){
+            exists=true;
+          }
+        });
+      }
+    }
+
+    callback(exists);
+
+  })
 }
 
 var findcourses = function(db, callback) {
   // Get the documents collection
   var collection = db.collection('courses');
   // Find some documents
-  collection.find({}).toArray(function(err, docs) {
+  collection.find().limit(1).toArray(function(err, docs) {
     assert.equal(err, null);
     callback(docs);
   });
@@ -523,10 +529,22 @@ var findDiscussionsByCourseId = function(db,callback, category){
 var findRatingsByCourseId = function(db,callback, category){
   var collection=db.collection('course_ratings');
 
-  collection.findOne({course_id:mongo.ObjectId(category)} , function(err, docs){
-    assert.equal(err,null);
-    callback(docs);
-  })
+  collection.find({course_id:mongo.ObjectId(category)}, function(err, cursor) {
+
+     var join = new Join(db).on({
+            field: 'uid', // <- field in employee doc 
+            as: 'user',     // <- new field in employee for contact doc 
+            to: 'uid',         // <- field in employer doc. treated as ObjectID automatically. 
+            from: 'users'  // <- collection name for employer doc 
+          });    
+
+          join.toArray(cursor, function(err, joinedDocs) {
+            // handle array of joined documents here 
+            assert.equal(err,null);
+            callback(joinedDocs);
+          });
+      });
+
 }
 
 var findRatingsByBlogId = function(db,callback, category){
@@ -589,13 +607,19 @@ var findHomeData = function(db, callback) {
 }
 
 var findlanguages = function(db, callback) {
-  // Get the documents collection
+
   var collection = db.collection('languages');
-  // Find some documents sas
+
   collection.find({}).toArray(function(err, docs) {
     assert.equal(err, null);
     callback(docs);
   });
+
+  /*collection.find({}).skip(2).limit(2).toArray(function(err, posts){
+                assert.equal(err, null);
+               return callback(posts);
+            });*/
+
 }
 
 var findcategoryById = function(db, callback,id) {
@@ -780,36 +804,35 @@ var addBlogRating=function(db,callback,data){
 
 }
 
-var addFav = function(db,callback,data){
+var toggleFavorite= function(db, data, callback){
   var collection=db.collection("users");
+  var uid= data.uid;
+  var courseId=data.courseId;
 
-  var cond = {
-    uid: data.uid
-  };
+  collection.findOne({uid:uid}, function(err, doc){
+    assert.equal(err,null);
 
- //data -> course_id, uid
+    var exists=false;
+    if(doc.favourites){
+      doc.favourites.forEach(favorite=>{
+        if(favorite==courseId){
+          exists=true;
+        }
+      });
+    }
 
-  collection.findOneAndUpdate( cond,{$push : {favourites: mongo.ObjectId(data.course_id)}},function(err,res){
-    if(err) throw err;
-    callback(true);
-  })
-
-}
-
-var removeFav = function(db,callback,data){
-  var collection=db.collection("users");
-
-  var cond = {
-    uid: data.uid
-  };
-
- //data -> course_id, uid
-
-  collection.findOneAndUpdate( cond,{$pull : {favourites: mongo.ObjectId(data.course_id)}},function(err,res){
-        if(err) throw err;
+    if(exists){
+      collection.findOneAndUpdate({uid:uid},{$pull:{favourites:mongo.ObjectId(courseId)}}, function(err, doc){
+        assert.equal(err, null);
+        callback(false)
+      });
+    }else{
+      collection.findOneAndUpdate({uid:uid},{$push:{favourites:mongo.ObjectId(courseId)}}, function(err, doc){
+        assert.equal(err, null);
         callback(true);
+      });
+    }
   })
-
 }
 
 var addCourseDiscussion = function(db,callback,data){
