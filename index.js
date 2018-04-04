@@ -10,12 +10,9 @@ var cors=require('cors');
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
-var corsOptions = {
-  origin: 'https://codercampy.com',
-  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-}
+app.use(cors());
 
 var Join = require('mongo-join').Join;
 
@@ -160,10 +157,10 @@ MongoClient.connect(url, function(err, client) {
 
   });
 
-  app.get('/courses',function(req,res){
+  app.get('/courses/:offset&:limit',function(req,res){
     findcourses(db,function(docs){
       res.send(docs);
-    })
+    },req.params.offset,req.params.limit)
   })
 
   app.get('/language-search/:ids',function(req,res){
@@ -468,11 +465,11 @@ var isFavorite= function(db, data, callback){
   })
 }
 
-var findcourses = function(db, callback) {
+var findcourses = function(db, callback,offset,limit) {
   // Get the documents collection
   var collection = db.collection('courses');
   // Find some documents
-  collection.find().limit(1).toArray(function(err, docs) {
+  collection.find().skip(parseInt(offset)).limit(parseInt(limit)).toArray(function(err, docs) {
     assert.equal(err, null);
     callback(docs);
   });
