@@ -1,20 +1,16 @@
-var MongoClient = require('mongodb').MongoClient
-  , assert = require('assert');
 
-var mongo=require('mongodb');
+var mongo = require('mongodb');
+var assert = require('assert');
 var admin = require("firebase-admin");
-
-var express=require('express');
-var app=express();
-var cors=require('cors');
+var express = require('express');
+var cors = require('cors');
 const bodyParser = require('body-parser');
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-app.use(cors());
-
 var Join = require('mongo-join').Join;
+
+var app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cors());
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -25,40 +21,88 @@ admin.initializeApp({
   databaseURL: 'https://codercampy-438d0.firebaseio.com'
 });
 
-/*admin.auth().getUser("sTX9rwkEfOYQhjzBs0TWZnrFe3D2")
-  .then(function(userRecord) {
-    // See the UserRecord reference doc for the contents of userRecord.
-    console.log("Successfully fetched user data:", userRecord.toJSON());
-  })
-  .catch(function(error) {
-    console.log("Error fetching user data:", error);
-  });*/
-
-// Connection URL
 var url = 'mongodb+srv://codercampy:SyndicatesEra0601@codercampy-1eblt.azure.mongodb.net/test';
 
-// Use connect method to connect to the server
-MongoClient.connect(url, function(err, client) {
+mongo.MongoClient.connect(url, function(err, client) {
   assert.equal(null, err);
-  var db=client.db("CoderCampy");
-  var User=db.collection("users");
 
-  
-  var filter;
+  var db = client.db("CoderCampy");
 
+  //data -> course_id, rating, message, uid
   app.post('/course-rating', function(request, response){
 
-    if(request.body) {
-      addCourseRating(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
+    if(mongo.ObjectId.isValid(request.body.course_id) && request.body.message && request.body.uid && parseInt(request.body.rating) && parseInt(request.body.rating) > 0 && parseInt(request.body.rating) <= 5) {
+      addCourseRating(db,function(res){
+        response.send(res);
       },request.body);
+    } else {
+    	response.send({code:"failed",message:"Body data missing or incorrectly formatted"});
     }
 
   });
+
+  //data -> blog_id, rating, message, uid
+  app.post('/blog-rating', function(request, response){
+
+  	if(mongo.ObjectId.isValid(request.body.blog_id) && request.body.message && request.body.uid && parseInt(request.body.rating) && parseInt(request.body.rating) > 0 && parseInt(request.body.rating) <= 5) {
+      addBlogRating(db,function(res){
+        response.send(res);
+      },request.body);
+    } else {
+    	response.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  });
+
+  app.get('/ratings/course/:id&:offset&:limit',function(req,res){
+    findRatingsByCourseId(db,function(docs){
+      res.send(docs);
+    },req.params.id,req.params.offset,req.params.limit)
+  })
+
+  app.get('/ratings/blog/:id',function(req,res){
+    findRatingsByBlogId(db,function(docs){
+      res.send(docs);
+    },req.params.id)
+  })
+
+  //data -> course_id, uid, message
+  app.post('/course-discussion', function(request, response){
+
+    if(mongo.ObjectId.isValid(request.body.course_id) && request.body.message && request.body.uid) {
+      addCourseDiscussion(db,function(res){
+        response.send(res);
+      },request.body);
+    } else {
+    	response.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  });
+
+  //data -> blog_id, uid, message
+  app.post('/blog-discussion', function(request, response){
+
+    if(mongo.ObjectId.isValid(request.body.blog_id) && request.body.message && request.body.uid) {
+      addBlogDiscussion(db,function(res){
+        response.send(res);
+      },request.body);
+    } else {
+    	response.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  });
+
+  app.get('/discussions/course/:id',function(req,res){
+    findDiscussionsByCourseId(db,function(docs){
+      res.send(docs);
+    },req.params.id)
+  })
+
+  app.get('/discussions/blog/:id',function(req,res){
+    findDiscussionsByBlogId(db,function(docs){
+      res.send(docs);
+    },req.params.id)
+  })
 
   app.post('/user-update/name', function(request, response){
 
@@ -102,20 +146,6 @@ MongoClient.connect(url, function(err, client) {
 
   });
 
-  app.post('/blog-rating', function(request, response){
-
-    if(request.body) {
-      addBlogRating(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
-      },request.body);
-    }
-
-  });
-
    app.post('/toggle-favorite', function(req, res){
     toggleFavorite(db, req.body, function(response){
       res.send(response);
@@ -128,37 +158,14 @@ MongoClient.connect(url, function(err, client) {
     })
   })
 
-
-  app.post('/course-discussion', function(request, response){
-
-    if(request.body) {
-      addCourseDiscussion(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
-      },request.body);
-    }
-
-  });
-
-  app.post('/blog-discussion', function(request, response){
-
-    if(request.body) {
-      addBlogDiscussion(db,function(isAdded){
-        if (isAdded) {
-          response.send({code:"success"});
-        } else {
-          response.send({code:"failed"});
-        }
-      },request.body);
-    }
-
-  });
-
   app.get('/courses/:offset&:limit',function(req,res){
     findcourses(db,function(docs){
+      res.send(docs);
+    },req.params.offset,req.params.limit)
+  })
+
+  app.get('/blogs/:offset&:limit',function(req,res){
+    findblogs(db,function(docs){
       res.send(docs);
     },req.params.offset,req.params.limit)
   })
@@ -197,20 +204,6 @@ MongoClient.connect(url, function(err, client) {
   })
 
   app.get('/categories',function(req,res){
-
-  	/*admin.database().ref("fcmTokens").child("NRtOhJpJfKStNqaHSlaW1ULbwOn2").once('value')
-  .then(function(token) {
-
-  	console.log(token.val());
-      
-  	if (token.val() == req.params.token) {
-
-  		res.send("true");
-
-  	} else {
-  		res.send("false");
-  	}
-  });*/
 
     findcategories(db,function(docs){
       res.send(docs);
@@ -259,38 +252,8 @@ MongoClient.connect(url, function(err, client) {
     },req.params.id)
   })
 
-  app.get('/blogs',function(req,res){
-    findblogs(db,function(docs){
-      res.send(docs);
-    })
-  })
-
   app.get('/blog/:id',function(req,res){
     findBlogById(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/discussions/course/:id',function(req,res){
-    findDiscussionsByCourseId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/ratings/course/:id',function(req,res){
-    findRatingsByCourseId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/discussions/blog/:id',function(req,res){
-    findDiscussionsByBlogId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/ratings/blog/:id',function(req,res){
-    findRatingsByBlogId(db,function(docs){
       res.send(docs);
     },req.params.id)
   })
@@ -495,11 +458,11 @@ var findUserNameByUid = function(db, callback, uid) {
   });
 }
 
-var findblogs = function(db, callback) {
+var findblogs = function(db, callback,offset,limit) {
   // Get the documents collection
   var collection = db.collection('blog');
   // Find some documents
-  collection.find({}).toArray(function(err, docs) {
+  collection.find({},{ _id: 1, name: 1, image: 1, instructor: 0, data: 0, time: 1, category: 1, languages: 1 }).skip(parseInt(offset)).limit(parseInt(limit)).toArray(function(err, docs) {
     assert.equal(err, null);
     callback(docs);
   });
@@ -517,16 +480,16 @@ var findBlogById = function(db,callback, category){
 var findDiscussionsByCourseId = function(db,callback, category){
   var collection=db.collection('course_discussions');
 
-  collection.findOne({course_id:mongo.ObjectId(category)} , function(err, docs){
+  collection.find({course_id:mongo.ObjectId(category)} , function(err, docs){
     assert.equal(err,null);
     callback(docs);
   })
 }
 
-var findRatingsByCourseId = function(db,callback, category){
+var findRatingsByCourseId = function(db,callback, courseId,offset,limit){
   var collection=db.collection('course_ratings');
 
-  collection.find({course_id:mongo.ObjectId(category)}, function(err, cursor) {
+  collection.find({course_id:mongo.ObjectId(courseId)}/*.skip(parseInt(offset)).limit(parseInt(limit))*/,function(err, cursor) {
 
      var join = new Join(db).on({
             field: 'uid', // <- field in employee doc 
@@ -544,10 +507,10 @@ var findRatingsByCourseId = function(db,callback, category){
 
 }
 
-var findRatingsByBlogId = function(db,callback, category){
+var findRatingsByBlogId = function(db,callback, blogId){
   var collection=db.collection('blog_ratings');
 
-  collection.findOne({blog_id:mongo.ObjectId(category)} , function(err, docs){
+  collection.find({blog_id:mongo.ObjectId(blogId)} , function(err, docs){
     assert.equal(err,null);
     callback(docs);
   })
@@ -557,10 +520,22 @@ var findRatingsByBlogId = function(db,callback, category){
 var findDiscussionsByBlogId = function(db,callback, id){
   var collection=db.collection('blog_discussions');
 
-  collection.findOne({blog_id:mongo.ObjectId(id)} , function(err, docs){
-    assert.equal(err,null);
-    callback(docs);
-  })
+  collection.find({blog_id:mongo.ObjectId(id)} , function(err, cursor){
+
+	var join = new Join(db).on({
+            field: 'uid', // <- field in employee doc 
+            as: 'user',     // <- new field in employee for contact doc 
+            to: 'uid',         // <- field in employer doc. treated as ObjectID automatically. 
+            from: 'users'  // <- collection name for employer doc 
+          });    
+
+          join.toArray(cursor, function(err, joinedDocs) {
+            // handle array of joined documents here 
+            assert.equal(err,null);
+            callback(joinedDocs);
+          });
+      });
+
 }
 
 
@@ -754,50 +729,83 @@ var updateUserPhone = function(db,callback,data){
 
 }
 
-var addCourseRating=function(db,callback,data){
-
-  var collection=db.collection("course_ratings");
+var addCourseRating = function(db,callback,data){
+  var collection = db.collection("course_ratings");
 
   var cond = {
-    course_id: mongo.ObjectId(data.course_id)
-  };
+  	uid:data.uid
+  }
 
   var d = {
     uid: data.uid,
+    course_id: mongo.ObjectId(data.course_id),
     rating: parseInt(data.rating),
     message: data.message
   }
 
- //data -> course_id, rating, message, uid
-
- // collection.createIndex({'ratings.uid':1},{unique:true});
-  collection.findOneAndUpdate( cond,{$push : {ratings: d}}, {upsert:true},function(err,res){
-    if(err) throw err;
-    callback(true);
-  })
+  collection.update(cond,d,{ upsert : true },function(err,res){
+    if(err) {
+    	callback({code:"failed",message:err.message});
+    } else callback({code:"success",message:"rating added successfully"});
+  });
 
 }
 
-var addBlogRating=function(db,callback,data){
-  var collection=db.collection("blog_ratings");
+var addBlogRating = function(db,callback,data){
+  var collection = db.collection("blog_ratings");
 
   var cond = {
-    blog_id: mongo.ObjectId(data.blog_id)
+    uid:data.uid
   };
 
   var d = {
     uid: data.uid,
+    blog_id: mongo.ObjectId(data.blog_id),
     rating: parseInt(data.rating),
     message: data.message
   }
 
- //data -> blog_id, rating, message, uid
+  collection.update(cond,d,{ upsert : true },function(err,res){
+    if(err) {
+    	callback({code:"failed",message:err.message});
+    } else callback({code:"success",message:"rating added successfully"});
+  });
 
- // collection.createIndex({'ratings.uid':1},{unique:true});
-  collection.findOneAndUpdate( cond,{$push : {ratings: d}}, {upsert:true},function(err,res){
-    if(err) throw err;
-    callback(true);
-  })
+}
+
+var addCourseDiscussion = function(db,callback,data){
+ var collection = db.collection("course_discussions");
+
+ var d = {
+   course_id: mongo.ObjectId(data.course_id),
+   uid: data.uid,
+   timestamp: Date.now(),
+   message: data.message
+ }
+
+ collection.insertOne(d,function(err,res){
+   if(err) {
+   	callback({code:"failed",message:err.message});
+   } else callback({code:"success",message:"discussion added successfully"});
+ });
+
+}
+
+var addBlogDiscussion = function(db,callback,data){
+  var collection = db.collection("blog_discussions");
+
+  var d = {
+   blog_id: mongo.ObjectId(data.blog_id),
+   uid: data.uid,
+   timestamp: Date.now(),
+   message: data.message
+ }
+
+ collection.insertOne(d,function(err,res){
+   if(err) {
+   	callback({code:"failed",message:err.message});
+   } else callback({code:"success",message:"discussion added successfully"});
+ });
 
 }
 
@@ -830,50 +838,6 @@ var toggleFavorite= function(db, data, callback){
       });
     }
   })
-}
-
-var addCourseDiscussion = function(db,callback,data){
-  var collection=db.collection("course_discussions");
-
-  var cond = {
-    course_id: mongo.ObjectId(data.course_id)
-  };
-
- d={
-   uid:data.uid,
-   timestamp: Date.now(),
-   message: data.message
- }
-
- //data-> course_id, uid, message
-
-  collection.findOneAndUpdate( cond,{$push : {discussions: d}},function(err,res){
-    if(err) throw err;
-    callback(true);
-  })
-
-}
-
-var addBlogDiscussion = function(db,callback,data){
-  var collection=db.collection("blog_discussions");
-
-  var cond = {
-    blog_id: mongo.ObjectId(data.blog_id)
-  };
-
- d={
-   uid:data.uid,
-   timestamp: Date.now(),
-   message: data.message
- }
-
- //data-> blog_id, uid, message
-
-  collection.findOneAndUpdate( cond,{$push : {discussions: d}},function(err,res){
-    if(err) throw err;
-    callback(true);
-  })
-
 }
 
 var updateUser= function(db, callback, data){
