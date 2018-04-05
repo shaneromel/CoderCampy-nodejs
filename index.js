@@ -144,13 +144,13 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   })
 
-  app.get('/courses/:offset&:limit&:exclude',function(req,res){
+  app.get('/courses/:offset&:limit',function(req,res){
 
   	if(parseInt(req.params.limit)) {
   		if (parseInt(req.params.offset) >= 0) {
   			findcourses(db,function(docs){
 		      res.send(docs);
-		    },req.params.offset,req.params.limit,req.params.exclude);
+		    },req.params.offset,req.params.limit,req.query.exclude);
   		} else {
   			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
   		}
@@ -160,13 +160,13 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   })
 
-  app.get('/blogs/:offset&:limit&:exclude',function(req,res){
+  app.get('/blogs/:offset&:limit',function(req,res){
 
   	if(parseInt(req.params.limit)) {
   		if (parseInt(req.params.offset) >= 0) {
   			findblogs(db,function(docs){
 		      res.send(docs);
-		    },req.params.offset,req.params.limit,req.params.exclude);
+		    },req.params.offset,req.params.limit,req.query.exclude);
   		} else {
   			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
   		}
