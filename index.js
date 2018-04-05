@@ -55,16 +55,36 @@ mongo.MongoClient.connect(url, function(err, client) {
   });
 
   app.get('/ratings/course/:id&:offset&:limit',function(req,res){
-    findRatingsByCourseId(db,function(docs){
-      res.send(docs);
-    },req.params.id,req.params.offset,req.params.limit)
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findRatingsByCourseId(db,function(docs){
+		     res.send(docs);
+		   },req.params.id,req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
   })
 
   app.get('/ratings/blog/:id&:offset&:limit',function(req,res){
-    findRatingsByBlogId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findRatingsByBlogId(db,function(docs){
+		      res.send(docs);
+		    },req.params.id,req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  });
 
   //data -> course_id, uid, message
   app.post('/course-discussion', function(request, response){
@@ -93,16 +113,140 @@ mongo.MongoClient.connect(url, function(err, client) {
   });
 
   app.get('/discussions/course/:id&:offset&:limit',function(req,res){
-    findDiscussionsByCourseId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findDiscussionsByCourseId(db,function(docs){
+		      res.send(docs);
+		    },req.params.id,req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
   })
 
   app.get('/discussions/blog/:id&:offset&:limit',function(req,res){
-    findDiscussionsByBlogId(db,function(docs){
-      res.send(docs);
-    },req.params.id)
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findDiscussionsByBlogId(db,function(docs){
+		      res.send(docs);
+		    },req.params.id,req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
   })
+
+  app.get('/courses/:offset&:limit',function(req,res){
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findcourses(db,function(docs){
+		      res.send(docs);
+		    },req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  })
+
+  app.get('/blogs/:offset&:limit',function(req,res){
+
+  	if(parseInt(req.params.limit)) {
+  		if (parseInt(req.params.offset) >= 0) {
+  			findblogs(db,function(docs){
+		      res.send(docs);
+		    },req.params.offset,req.params.limit);
+  		} else {
+  			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+  		}
+    } else {
+    	res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
+    }
+
+  });
+
+  app.get('/categories',function(req,res){
+
+    findcategories(db,function(docs){
+      res.send(docs);
+    });
+
+  });
+
+  app.get('/home-data',function(req,res){
+
+    findHomeData(db,function(docs){
+      res.send(docs);
+    });
+
+  });
+
+  app.get('/instructors',function(req,res){
+    
+    findinstructors(db,function(docs){
+      res.send(docs);
+    });
+
+  });
+
+  app.get('/languages',function(req,res){
+
+    findlanguages(db,function(docs){
+      res.send(docs);
+    });
+
+  });
+
+  app.get('/category/:id',function(req,res){
+
+    findcategoryById(db, function(doc){
+      res.send(doc);
+    },req.params.id);
+
+  });
+
+  app.get('/course/:id',function(req,res){
+
+    findcourseById(db,function(docs){
+      res.send(docs);
+    },req.params.id);
+
+  });
+
+  app.get('/instructor/:id',function(req,res){
+
+    findinstructorById(db,function(docs){
+      res.send(docs);
+    },req.params.id);
+
+  })
+
+  app.get('/blog/:id',function(req,res){
+
+    findBlogById(db,function(docs){
+      res.send(docs);
+    },req.params.id);
+
+  });
+
+  app.get('/language/:id',function(req,res){
+
+    findLanguage(db,function(doc){
+      res.send(doc);
+    },req.params.id);
+
+  });
 
   app.post('/user-update/name', function(request, response){
 
@@ -158,18 +302,6 @@ mongo.MongoClient.connect(url, function(err, client) {
     })
   })
 
-  app.get('/courses/:offset&:limit',function(req,res){
-    findcourses(db,function(docs){
-      res.send(docs);
-    },req.params.offset,req.params.limit)
-  })
-
-  app.get('/blogs/:offset&:limit',function(req,res){
-    findblogs(db,function(docs){
-      res.send(docs);
-    },req.params.offset,req.params.limit)
-  })
-
   app.get('/language-search/:ids',function(req,res){
     findcourses(db,function(docs){
       var languages=req.params.ids.split(',');
@@ -203,66 +335,11 @@ mongo.MongoClient.connect(url, function(err, client) {
     }, req.params.id);
   })
 
-  app.get('/categories',function(req,res){
-
-    findcategories(db,function(docs){
-      res.send(docs);
-    })
-  })
-
-  app.get('/home-data',function(req,res){
-    findHomeData(db,function(docs){
-      res.send(docs);
-    })
-  })
-
   app.get('/name/:uid',function(req,res){
     findUserNameByUid(db,function(docs){
       res.send({name : docs});
     }, req.params.uid);
-  })
-
-  app.get('/instructors',function(req,res){
-    findinstructors(db,function(docs){
-      res.send(docs);
-    })
-  })
-
-  app.get('/languages',function(req,res){
-    findlanguages(db,function(docs){
-      res.send(docs);
-    })
-  })
-
-  app.get('/category/:id',function(req,res){
-    findcategoryById(db, function(doc){
-      res.send(doc);
-    },req.params.id);
-  })
-
-  app.get('/course/:id',function(req,res){
-    findcourseById(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/instructor/:id',function(req,res){
-    findinstructorById(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/blog/:id',function(req,res){
-    findBlogById(db,function(docs){
-      res.send(docs);
-    },req.params.id)
-  })
-
-  app.get('/language/:id',function(req,res){
-    findLanguage(db,function(doc){
-      res.send(doc);
-    },req.params.id)
-  })
+  });
 
   app.get('/languages/:ids',function(req,res){
     findlanguages(db,function(docs){
@@ -373,12 +450,6 @@ mongo.MongoClient.connect(url, function(err, client) {
     }, req.body);
   })
 
-  app.get('/users',function(req,res){
-    findusers(db,function(docs){
-      res.send(docs);
-    })
-  });
-
   app.get('/user/:id',function(req,res){
     findUserById(db,function(doc){
       res.send(doc);
@@ -398,7 +469,7 @@ mongo.MongoClient.connect(url, function(err, client) {
   })
 
   app.get('/',function(req,res){
-    
+    res.send("<h1>Codercampy REST API</h1>");
   })
 
 });
@@ -633,11 +704,6 @@ var findlanguages = function(db, callback) {
     assert.equal(err, null);
     callback(docs);
   });
-
-  /*collection.find({}).skip(2).limit(2).toArray(function(err, posts){
-                assert.equal(err, null);
-               return callback(posts);
-            });*/
 
 }
 
