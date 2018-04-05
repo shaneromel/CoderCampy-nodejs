@@ -144,13 +144,13 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   })
 
-  app.get('/courses/:offset&:limit',function(req,res){
+  app.get('/courses/:offset&:limit&:exclude',function(req,res){
 
   	if(parseInt(req.params.limit)) {
   		if (parseInt(req.params.offset) >= 0) {
   			findcourses(db,function(docs){
 		      res.send(docs);
-		    },req.params.offset,req.params.limit);
+		    },req.params.offset,req.params.limit,req.params.exclude);
   		} else {
   			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
   		}
@@ -160,13 +160,13 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   })
 
-  app.get('/blogs/:offset&:limit',function(req,res){
+  app.get('/blogs/:offset&:limit&:exclude',function(req,res){
 
   	if(parseInt(req.params.limit)) {
   		if (parseInt(req.params.offset) >= 0) {
   			findblogs(db,function(docs){
 		      res.send(docs);
-		    },req.params.offset,req.params.limit);
+		    },req.params.offset,req.params.limit,req.params.exclude);
   		} else {
   			res.send({code:"failed",message:"Body data missing or incorrectly formatted"});
   		}
@@ -499,14 +499,80 @@ var isFavorite= function(db, data, callback){
   })
 }
 
-var findcourses = function(db, callback,offset,limit) {
-  // Get the documents collection
+var findcourses = function(db, callback,offset,limit,excludes) {
   var collection = db.collection('courses');
-  // Find some documents
-  collection.find().skip(parseInt(offset)).limit(parseInt(limit)).toArray(function(err, docs) {
-    assert.equal(err, null);
-    callback(docs);
+
+  var arr = {};
+
+  if (excludes) {
+  	  var a = excludes.split(",");
+
+	  a.forEach(ex => {
+	  	arr[ex] = 0;
+	  });
+  }
+
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset),
+    "fields" : arr
+  }
+  
+  collection.find({},p,function(err, cursor) {
+
+  	var join = new Join(db).on({
+            field: 'category',
+            as: 'cat',
+            to: '_id',
+            from: 'categories'  // <- collection name for employer doc 
+     });
+
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+
   });
+
+}
+
+var findblogs = function(db, callback,offset,limit,excludes) {
+  var collection = db.collection('blog');
+
+  var arr = {};
+
+  if (excludes) {
+  	  var a = excludes.split(",");
+
+	  a.forEach(ex => {
+	  	arr[ex] = 0;
+	  });
+  }
+
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset),
+    "fields" : arr
+  }
+  
+  collection.find({},p,function(err, cursor) {
+
+  	var join = new Join(db).on({
+            field: 'category',
+            as: 'cat',
+            to: '_id',
+            from: 'categories'  // <- collection name for employer doc 
+     });
+
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+
+  });
+
 }
 
 var findcoursesByInstructor = function(db, callback, id) {
@@ -526,16 +592,6 @@ var findUserNameByUid = function(db, callback, uid) {
   collection.findOne({uid:uid} , function(err, docs){
     assert.equal(err, null);
     callback(docs.name);
-  });
-}
-
-var findblogs = function(db, callback,offset,limit) {
-  // Get the documents collection
-  var collection = db.collection('blog');
-  // Find some documents
-  collection.find({},{ _id: 1, name: 1, image: 1, instructor: 0, data: 0, time: 1, category: 1, languages: 1 }).skip(parseInt(offset)).limit(parseInt(limit)).toArray(function(err, docs) {
-    assert.equal(err, null);
-    callback(docs);
   });
 }
 
