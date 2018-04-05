@@ -60,7 +60,7 @@ mongo.MongoClient.connect(url, function(err, client) {
     },req.params.id,req.params.offset,req.params.limit)
   })
 
-  app.get('/ratings/blog/:id',function(req,res){
+  app.get('/ratings/blog/:id&:offset&:limit',function(req,res){
     findRatingsByBlogId(db,function(docs){
       res.send(docs);
     },req.params.id)
@@ -92,13 +92,13 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   });
 
-  app.get('/discussions/course/:id',function(req,res){
+  app.get('/discussions/course/:id&:offset&:limit',function(req,res){
     findDiscussionsByCourseId(db,function(docs){
       res.send(docs);
     },req.params.id)
   })
 
-  app.get('/discussions/blog/:id',function(req,res){
+  app.get('/discussions/blog/:id&:offset&:limit',function(req,res){
     findDiscussionsByBlogId(db,function(docs){
       res.send(docs);
     },req.params.id)
@@ -477,64 +477,111 @@ var findBlogById = function(db,callback, category){
   })
 }
 
-var findDiscussionsByCourseId = function(db,callback, category){
-  var collection=db.collection('course_discussions');
-
-  collection.find({course_id:mongo.ObjectId(category)} , function(err, docs){
-    assert.equal(err,null);
-    callback(docs);
-  })
-}
-
 var findRatingsByCourseId = function(db,callback, courseId,offset,limit){
   var collection=db.collection('course_ratings');
 
-  collection.find({course_id:mongo.ObjectId(courseId)}/*.skip(parseInt(offset)).limit(parseInt(limit))*/,function(err, cursor) {
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset)
+  }
+
+  collection.find({course_id:mongo.ObjectId(courseId)},p,function(err, cursor) {
 
      var join = new Join(db).on({
-            field: 'uid', // <- field in employee doc 
-            as: 'user',     // <- new field in employee for contact doc 
-            to: 'uid',         // <- field in employer doc. treated as ObjectID automatically. 
+            field: 'uid',
+            as: 'user',
+            to: 'uid',
             from: 'users'  // <- collection name for employer doc 
-          });    
+     });    
 
-          join.toArray(cursor, function(err, joinedDocs) {
-            // handle array of joined documents here 
-            assert.equal(err,null);
-            callback(joinedDocs);
-          });
-      });
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+
+  });
 
 }
 
-var findRatingsByBlogId = function(db,callback, blogId){
+var findRatingsByBlogId = function(db,callback, blogId,offset,limit){
   var collection=db.collection('blog_ratings');
 
-  collection.find({blog_id:mongo.ObjectId(blogId)} , function(err, docs){
-    assert.equal(err,null);
-    callback(docs);
-  })
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset)
+  }
+
+  collection.find({blog_id:mongo.ObjectId(blogId)},p,function(err, cursor) {
+
+     var join = new Join(db).on({
+            field: 'uid',
+            as: 'user',
+            to: 'uid',
+            from: 'users'  // <- collection name for employer doc 
+     });    
+
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+     
+  });
+
 }
 
+var findDiscussionsByCourseId = function(db,callback, courseId,offset,limit){
+  var collection=db.collection('course_discussions');
 
-var findDiscussionsByBlogId = function(db,callback, id){
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset)
+  }
+
+  collection.find({course_id:mongo.ObjectId(courseId)},p,function(err, cursor) {
+
+     var join = new Join(db).on({
+            field: 'uid',
+            as: 'user',
+            to: 'uid',
+            from: 'users'  // <- collection name for employer doc 
+     });    
+
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+     
+  });
+
+}
+
+var findDiscussionsByBlogId = function(db,callback,id,offset,limit){
   var collection=db.collection('blog_discussions');
 
-  collection.find({blog_id:mongo.ObjectId(id)} , function(err, cursor){
+  var p = {
+  	"limit": parseInt(limit),
+    "skip": parseInt(offset)
+  }
 
-	var join = new Join(db).on({
-            field: 'uid', // <- field in employee doc 
-            as: 'user',     // <- new field in employee for contact doc 
-            to: 'uid',         // <- field in employer doc. treated as ObjectID automatically. 
+  collection.find({blog_id:mongo.ObjectId(id)},p,function(err, cursor) {
+
+     var join = new Join(db).on({
+            field: 'uid',
+            as: 'user',
+            to: 'uid',
             from: 'users'  // <- collection name for employer doc 
-          });    
+     });    
 
-          join.toArray(cursor, function(err, joinedDocs) {
-            // handle array of joined documents here 
-            assert.equal(err,null);
-            callback(joinedDocs);
-          });
-      });
+     join.toArray(cursor, function(err, joinedDocs) {
+       // handle array of joined documents here 
+       assert.equal(err,null);
+       callback(joinedDocs);
+     });
+     
+  });
 
 }
 
