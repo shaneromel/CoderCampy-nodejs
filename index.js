@@ -28,6 +28,23 @@ mongo.MongoClient.connect(url, function(err, client) {
 
   var db = client.db("CoderCampy");
 
+  app.post('/count-collection', function(req, res){
+    countCollection(db, function(count){
+      res.send({
+        count:count
+      })
+      // res.send(count);
+    }
+  , req.body.blog_id);
+  })
+
+  app.post('/course', function(req,res){
+    
+    addCourse(db,function(response){
+      res.send(response);
+    },req.body)
+  })
+
   //data -> course_id, rating, message, uid
   app.post('/course-rating', function(request, response){
 
@@ -1043,6 +1060,37 @@ var findUserByUid=function(db, callback, uid){
   collection.findOne({uid:uid}, function(err,doc){
     assert.equal(err, null);
     callback(doc);
+  })
+}
+
+var countCollection=function(db, callback, id){
+  var collection=db.collection("blog_discussions");
+  collection.find({ blog_id: mongo.ObjectId(id)}).toArray(function(err,docs){
+    assert.equal(err)
+    callback(docs.length);
+  })
+}
+
+var addCourse=function(db,callback,course){
+  var collection=db.collection("courses");
+  if(course.category){
+    course.category=mongo.ObjectId(course.category);
+  }
+
+  if(course.instructor){
+    course.instructor=mongo.ObjectId(course.instructor);
+  }
+
+  if(course.languages){
+    for(var i=0;i<course.languages.length;i++){
+      course.languages[i]=mongo.ObjectId(course.languages[i]);
+    }
+  }
+
+  collection.insertOne(course, function(){
+    callback({
+      status:"success"
+    })
   })
 }
 
