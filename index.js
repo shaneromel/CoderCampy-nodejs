@@ -38,6 +38,20 @@ mongo.MongoClient.connect(url, function(err, client) {
   , req.body.blog_id);
   })
 
+  app.delete('/discussions/course/:id', function(req,res){
+    deleteDiscussion(db,function(response){
+      res.send(response);
+    }, req.params.id)
+  })
+
+  app.get('/count-discussions/:id', function(req,res){
+    countDiscussions(db,function(count){
+      res.send({
+        count:count
+      })
+    }, req.params.id);
+  })
+
   app.post('/course', function(req,res){
     
     addCourse(db,function(response){
@@ -1078,6 +1092,14 @@ var countCollection=function(db, callback, id){
   })
 }
 
+var countDiscussions=function(db,callback,id){
+  var collection=db.collection("course_discussions");
+  collection.find({course_id:mongo.ObjectId(id)}).toArray(function(err,docs){
+    assert.equal(err,null);
+    callback(docs.length);
+  })
+}
+
 var addCourse=function(db,callback,course){
   var collection=db.collection("courses");
   if(course.category){
@@ -1099,6 +1121,24 @@ var addCourse=function(db,callback,course){
       status:"success"
     })
   })
+}
+
+var deleteDiscussion=function(db,callback,id){
+  var collection=db.collection("course_discussions")
+
+  collection.deleteOne({_id:mongo.ObjectId(id)}, function(err, obj){
+    if(err){
+      callback({
+        code:"failed",
+        error:err
+      })
+    }else{
+      callback({
+        code:'success'
+      })
+    }
+  })
+
 }
 
 var port = process.env.PORT || 3000;
