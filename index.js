@@ -21,7 +21,7 @@ admin.initializeApp({
   databaseURL: 'https://codercampy-438d0.firebaseio.com'
 });
 
-var url = 'mongodb+srv://codercampy:SyndicatesEra0601@codercampy-1eblt.azure.mongodb.net/test';
+var url = 'mongodb://localhost:27017';
 
 mongo.MongoClient.connect(url, function(err, client) {
   assert.equal(null, err);
@@ -445,7 +445,14 @@ mongo.MongoClient.connect(url, function(err, client) {
         name:name,
         uid:id,
         provider:prov,
-        image: image
+        image: image,
+        socialLinks:{
+          facebook:"",
+          linkedin:"",
+          twitter:"",
+          youtube:""
+        },
+        favourites:new Array()
       }
 
       addUser(db,function(isAdded){
@@ -763,7 +770,7 @@ var findHomeData = function(db, callback) {
   // Get the documents collection
   var collection = db.collection('home');
   // Find some documents
-  collection.findOne({_id:mongo.ObjectId("5abe16aaa752c82bf018f76b")},function(err, docs) {
+  collection.findOne({_id:mongo.ObjectId("5af97d7fac49d7253cee32b4")},function(err, docs) {
     assert.equal(err, null);
     callback(docs);
   });
